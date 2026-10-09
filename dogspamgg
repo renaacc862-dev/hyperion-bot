@@ -1,0 +1,364 @@
+import asyncio
+import asyncio
+from telethon import TelegramClient, events
+
+# Telegram API Key များ
+api_id = 31735097
+api_hash = '031b0aa979f272ea147e90fb9b7334fb'
+
+# Bot Token
+bot_token = '8710575430:AAENxG4WCLdO3g9BFmAcz9LEs6OWpYRg58c'
+
+client = TelegramClient('hyperion_bot_session', api_id, api_hash)
+
+# 👑 OWNER ID (ဒီနေရာတွင် မိမိ၏ Telegram User ID နံပါတ် ပြောင်းထည့်ပါ)
+OWNER_ID = 123456789  
+
+OWNERS = set([OWNER_ID])
+ADMINS = set([OWNER_ID])
+
+# မူရင်း မြန်မာ စာကြောင်းများ
+base_phrases = [
+    "စကားတောင် သေချာ မပြောတတ်ဘဲ လာမဆရာစမ်းပါနဲ့",
+    "မင်းပြောတာတွေက ကလေးကလားတွေ ပါကွာ ရှင်းပြမနေနဲ့တော့",
+    "အနိုင်ရချင်ရင်တော့ အိမ်မှာပဲ သွားအိပ်မက်မက်လိုက်နော်",
+    "အာရုံမလာပါနဲ့ မအားဘူး ကလေးရယ်",
+    "အပြောကြီးပြီး အလုပ်မဖြစ်တဲ့သူနဲ့ စကားပြောရတာ အချိန်ကုန်တယ်",
+    "မင်းရဲ့ အဆင့်က ငါနဲ့ ယှဉ်ဖို့ ဝေးပါသေးတယ်",
+    "ဒေါသတွေ ထွက်မနေပါနဲ့ ဦးနှောက်ပါ ပူသွားမယ် နားလိုက်တော့",
+    "မင်းဆီက ကြောင်းကျိုးဆီလျော်တဲ့ စကားမျိုး မျှော်လင့်တာ ငါ့အမှားပါ",
+    "ဘာတွေ လျှောက်ပြောနေမှန်းလဲ မသိဘူး ဘာသာပြန်အကူအညီ လိုသေးလား",
+    "တော်တော့နော် စကားတိုင်းကို ရယ်စရာဖြစ်အောင် လာမလုပ်နဲ့",
+    "မင်းပြောသမျှက လေထုထဲမှာပဲ ပျောက်သွားတာ မဆန်းပါဘူး",
+    "ဘာမှ မသိဘဲ ပေါင်းကူးဆောက်ချင်နေတာလား ဘာလဲ",
+    "စကားလုံးတွေ ရှာမတွေ့တော့ဘူးလား အချိန်ခေတ္တ ပေးရမလား",
+    "ငါနားထောင်နေရတာ အိပ်ငိုက်လာပြီ ကောင်းကောင်း ရေးစမ်းပါ",
+    "အခြေအမြစ်မရှိတဲ့ စကားတွေကို လာမပြောပါနဲ့",
+    "မင်းရဲ့ တွေးခေါ်မှုက သုညပဲ မင်းကိုယ်မင်း သတိထားမိရဲ့လား",
+    "တကယ် ရယ်ရတယ် မင်းရဲ့ ကြိုးစားမှုကိုတော့ ချီးကျူးပါတယ်",
+    "အမှန်တရားက ခါးတယ်နော် လာမငြင်းနဲ့တော့",
+    "စကားနိုင်လုချင်ရင် အထက်တန်း ပြန်တက်ခဲ့ပါဦး",
+    "ဒီလောက်ပဲလား မင်းရဲ့ အရည်အချင်းက",
+    "မင်းရဲ့ စကားတွေက ဘာမှ အဓိပ္ပာယ် မရှိဘူး",
+    "လာမရှုပ်ပါနဲ့ ကလေးလေးရယ် သွားဆော့လိုက်ဦး",
+    "ကြောက်ရင် ထွက်ပြေးလိုက် ရပါတယ် မရှက်နဲ့",
+    "ဘာတွေ ကြောက်နေတာလဲ ရဲရဲဝံ့ဝံ့ ဆွေးနွေးပါ",
+    "မင်းပြောတာကို မင်းရော ပြန်နားလည်ရဲ့လား မေးပါရစေ",
+    "စိတ်အေးအေးထားပါဦး ရေအေးအေးလေး သောက်လိုက်ပါ",
+    "မင်းရဲ့ အရည်အချင်းနဲ့ ငါ့ကို လာပြိုင်ဖို့ မစို့မပို့ပါဘူး",
+    "ပြောလေ မှားလေပဲ ဆက်မပြောတာ ပိုကောင်းမယ်ထင်တယ်",
+    "မင်းနဲ့ စကားပြောရတာ အချိန်ဖြုန်းနေရသလိုပဲ",
+    "ရှုံးတာကို လက်ခံလိုက်ပါ မင်းနိုင်မှာ မဟုတ်ဘူး",
+    "ကိုယ့်အဆင့်ကိုယ် သိရင် နောက်ဆုတ်လိုက်တော့",
+    "ဘာတွေ လျှောက်အော်နေတာလဲ အသံပဲ ကုန်မယ်",
+    "အဓိပ္ပာယ် မရှိတာတွေ လာမပြောနဲ့တော့ ကလေးရယ်",
+    "ဆရာကြီး လာမလုပ်ပါနဲ့ မင်းအတိုင်းအတာ ငါသိတယ်",
+    "မင်းရဲ့ အသိပညာက ဒီလောက်ပဲလား မေးချင်တယ်",
+    "စကားနိုင်လုတာတောင် သေချာ မလုတတ်ပါလား",
+    "ခေါင်းမပါတဲ့ စကားတွေကို ဆက်မပြောပါနဲ့တော့",
+    "အမှန်အတိုင်း ပြောရင် စိတ်မဆိုးကြေးနော်",
+    "မင်းရဲ့ လေလုံးတွေက မိုးပေါ် ရောက်နေပြီ",
+    "လက်တွေ့မှာ ဘာမှ မဟုတ်ဘဲ စကားတော့ ကြီးတယ်",
+    "တော်လိုက်ပါတော့နော် မင်းအတွက် အားနာလို့ပါ",
+    "ဘာမှ စိတ်ဓာတ်ကျမသွားနဲ့ သေချာ ပြန်ကြိုးစားခဲ့",
+    "ဉာဏ်နည်းတာကို လာမပြပါနဲ့ အားနွဲ့လွန်းလို့ပါ",
+    "ဒီလောက်ပဲ တတ်နိုင်တာဆိုရင်တော့ သနားမိတယ်",
+    "စကားလုံး အသုံးအနှုန်းကို ပြန်ဆင်ခြင်ပါဦး",
+    "ငါ့ရှေ့မှာ လာအပိုင်တွက်မနေနဲ့ ကလေးရယ်",
+    "မင်းနဲ့ မတန်လို့ စကားတောင် ဆက်မပြောချင်တော့ဘူး",
+    "ရှုံးနိမ့်မှုကို ဂုဏ်သိက္ခာရှိရှိ လက်ခံလိုက်ပါ",
+    "အလကား သက်သက် အချိန်ကုန်အောင် လာမလုပ်နဲ့",
+    "မင်းအဆင်ပြေရဲ့လား ခေါင်းတွေ ပူသွားပြီလား ညှာပေးရမလား"
+]
+
+full_1000_messages = [phrase.strip() for phrase in base_phrases * 20]
+
+active_attacks = {}
+speed_delay = 0.1
+
+# --- OWNER / ADMIN MANAGEMENT ---
+@client.on(events.NewMessage(pattern=r'/(owner|add_admin)'))
+async def add_admin_handler(event):
+    if event.sender_id != OWNER_ID:
+        await event.respond("🚫 Admin Only Command.")
+        return
+    if event.reply_to_msg_id:
+        reply_msg = await event.get_reply_message()
+        new_id = reply_msg.sender_id
+        ADMINS.add(new_id)
+        await event.respond(f"✅ User ID: `{new_id}` ကို Admin အဖြစ် ထည့်သွင်းလိုက်ပါပြီ။")
+
+# --- REPLY ATTACK (/go သို့မဟုတ် /attack) ---
+@client.on(events.NewMessage(pattern=r'/(go|attack|qa|quickattack|nuke|ultraattack)'))
+async def attack_handler(event):
+    if event.sender_id not in ADMINS:
+        await event.respond("🚫 Admin Only Command.")
+        return
+
+    chat_id = event.chat_id
+    if not event.reply_to_msg_id:
+        await event.respond("❌ Target မက်ဆေ့ချ်ကို Reply ပြန်ပြီး Command ခေါ်ပေးပါ။")
+        return
+
+    reply_msg = await event.get_reply_message()
+    target_msg_id = reply_msg.id
+    
+    # Target User ရဲ့ Name သို့မဟုတ် Username ယူခြင်း
+    target_user = await reply_msg.get_sender()
+    target_name = target_user.first_name if target_user and target_user.first_name else "Target"
+    
+    active_attacks[chat_id] = True
+    
+    # ပထမဆုံး စတင်ကြောင်း မက်ဆေ့ချ်
+    await event.respond("ပညာမတက်သောခွေးမသားလေးကိုပညာသင်ပေးပါတော့မယ်", reply_to=target_msg_id)
+    await asyncio.sleep(0.5)
+    
+    # စာကြောင်းများကို Target မက်ဆေ့ချ်အောက်တွင် မနားတမ်း Reply ပို့ပေးမည်
+    while active_attacks.get(chat_id, False):
+        for msg in full_1000_messages:
+            if not active_attacks.get(chat_id, False):
+                break
+            
+            send_text = f"{target_name} {msg}"
+            await event.respond(send_text, reply_to=target_msg_id)
+            await asyncio.sleep(speed_delay)
+
+# --- STOP ATTACK (/ungo သို့မဟုတ် /stop) ---
+@client.on(events.NewMessage(pattern=r'/(ungo|stop|stopall|unsecret)'))
+async def stop_handler(event):
+    if event.sender_id not in ADMINS:
+        return
+    
+    chat_id = event.chat_id
+    active_attacks[chat_id] = False
+    
+    # ရပ်တန့်ကြောင်း မက်ဆေ့ချ်
+    if event.reply_to_msg_id:
+        await event.respond("ပညာတွေသင်ပေးလိုက်ပြီနောက်အာမခံစေရတော့ပါဘူး", reply_to=event.reply_to_msg_id)
+    else:
+        await event.respond("ပညာတွေသင်ပေးလိုက်ပြီနောက်အာမခံစေရတော့ပါဘူး")
+
+client.start(bot_token=bot_token)
+print("Hyperion Bot စတင် အလုပ်လုပ်နေပါပြီ...")
+client.run_until_disconnected()
+ြောတာ ပိုကောင်းလိမ့်မယ်"
+"မင်းရဲ့ အဆင့်က ဒီလောက်ပဲလားလို့ မေးရင် စိတ်ဆိုးဦးမလား"
+"ခေါင်းအေးအေးထားပြီး မင်းပြောခဲ့တာတွေကို ပြန်စဉ်းစားကြည့်ပါဦး"
+"အေးဆေးပါ၊ မင်းရဲ့ မှားယွင်းမှုကို လက်ခံဖို့ အချိန်ခဏ ပေးပါ့မယ်"
+]
+
+full_1000_messages = [phrase.strip() for phrase in base_phrases * 20]
+
+active_attacks = {}
+speed_delay = 0.1
+
+COMMAND_HELP = """
+═══════════ COMMANDS (1-100) ══════════
+👑 OWNER / ADMIN SYSTEM
+/owner <u>      - Owner ထည့်
+/removeowner <u>- Owner ဖြုတ်
+/gang           - Owner List
+/add_admin <u>  - Admin ထည့်
+/remove_admin   - Admin ဖြုတ်
+/list_admins    - Admin List
+/limit <u> <t>  - Temp Admin
+/limitlist      - Limit List
+/limitcommand   - Command Limit
+/on <pass>      - Bot Reclaim
+
+⚔️ CORE ATTACK
+/attack <t>     - Attack လုပ်
+/stop           - Attack ရပ်
+/stopall        - Attack အားလုံးရပ်
+/multiple <..>  - Multi Attack
+/stopmultiple   - Multi ရပ်
+/qa <t>         - Quick Attack
+/quickattack <t>- Quick Attack
+/go             - Reply Attack
+/ungo           - Reply ရပ်
+/megaspam <t>   - MegaSpam (50)
+/stopmegaspam   - MegaSpam ရပ်
+/secret <t>     - Secret Attack
+/unsecret       - Secret ရပ်
+/attackuser <t> - Username Attack
+/stopuser       - Username ရပ်
+
+💥 NEW ATTACK MODES
+/ultraattack <t>- Ultra Attack
+/nuke <t>       - Nuke Attack
+/xattack <t>    - X Attack
+/killattack <t> - Kill Attack
+/bombattack <t> - Bomb Attack
+/warattack <t>  - War Attack
+/turboattack    - Turbo Mode
+/blastattack    - Blast Mode
+/hyperattack    - Hyper Mode
+/superattack    - Super Mode
+/stormattack    - Storm Mode
+/shadowattack   - Shadow Mode
+/fireattack     - Fire Mode
+/deathattack    - Death Mode
+/wipeattack     - Wipe Mode
+/laserattack    - Laser Mode
+/strikeattack   - Strike Mode
+/missileattack  - Missile Mode
+
+⚡ SPEED CONTROLS
+/setspeed <s>   - Speed သတ်မှတ်
+/mode <m>       - Mode ရွေး
+/fastest        - Fastest
+/godspeed       - God Speed
+/ultragodspeed  - Ultra God
+/newgodrebornspeed - New God
+/flashspeed     - Flash
+/lightspeed     - Light
+/hyperspeed     - Hyper
+/instantspeed   - Instant
+/normal         - Normal
+/slow           - Slow
+/burst          - Burst
+/hyperburst     - HyperBurst
+/ultraburst     - UltraBurst
+/normalmode     - Normal Mode
+/zerodelay      - Zero Delay
+/smartzerodelay - Smart Zero
+/ultimatezerodelay - UltimateZero
+/smartattack    - Smart Attack
+/fastspeed      - Fast Speed
+
+🚀 NEW SPEEDS
+/ludicrous      - Ludicrous Speed
+/warpspeed      - Warp Speed
+/sonicspeed     - Sonic Speed
+/turbomode      - Turbo Mode
+/overdrive      - Overdrive
+/rapidfire      - Rapid Fire
+/blitzspeed     - Blitz Speed
+/maxspeed       - Max Speed
+/plaidspeed     - Plaid Speed
+/supersonicspeed- Supersonic
+════════════════════════════════
+Powered by Hyperion No Mercy
+"""
+
+@client.on(events.NewMessage(pattern=r'/(help|menu|start)'))
+async def help_handler(event):
+    await event.respond(COMMAND_HELP)
+
+# --- OWNER / ADMIN MANAGEMENT ---
+@client.on(events.NewMessage(pattern=r'/(owner|add_admin)'))
+async def add_admin_handler(event):
+    if event.sender_id != OWNER_ID:
+        await event.respond("❌ Owner သာလျှင် Admin/Owner သစ် ထည့်သွင်းပိုင်ခွင့် ရှိပါသည်။")
+        return
+    if event.reply_to_msg_id:
+        reply_msg = await event.get_reply_message()
+        new_id = reply_msg.sender_id
+        ADMINS.add(new_id)
+        if event.text.startswith('/owner'):
+            OWNERS.add(new_id)
+            await event.respond(f"👑 User ID: `{new_id}` ကို Owner အဖြစ် သတ်မှတ်လိုက်ပါပြီ။")
+        else:
+            await event.respond(f"✅ User ID: `{new_id}` ကို Admin အဖြစ် ထည့်သွင်းလိုက်ပါပြီ။")
+
+@client.on(events.NewMessage(pattern=r'/(removeowner|remove_admin)'))
+async def remove_admin_handler(event):
+    if event.sender_id != OWNER_ID:
+        await event.respond("❌ Owner သာလျှင် ဖြုတ်ပိုင်ခွင့် ရှိပါသည်။")
+        return
+    if event.reply_to_msg_id:
+        reply_msg = await event.get_reply_message()
+        rem_id = reply_msg.sender_id
+        if rem_id == OWNER_ID:
+            await event.respond("❌ Main Owner ကို ဖြုတ်၍မရပါ။")
+            return
+        ADMINS.discard(rem_id)
+        OWNERS.discard(rem_id)
+        await event.respond(f"✅ User ID: `{rem_id}` ကို 권한/Admin မှ ဖြုတ်လိုက်ပါပြီ။")
+
+@client.on(events.NewMessage(pattern=r'/(gang|list_admins)'))
+async def list_handler(event):
+    if event.text.startswith('/gang'):
+        owner_str = "\n".join([f"• `{o}`" for o in OWNERS])
+        await event.respond(f"👑 **OWNER LIST:**\n{owner_str}")
+    else:
+        admin_str = "\n".join([f"• `{a}`" for a in ADMINS])
+        await event.respond(f"🛡️ **ADMIN LIST:**\n{admin_str}")
+
+# --- ATTACK MODES (ALL MODES) ---
+@client.on(events.NewMessage(pattern=r'/(attack|go|ultraattack|nuke|xattack|killattack|bombattack|warattack|turboattack|blastattack|hyperattack|superattack|stormattack|shadowattack|fireattack|deathattack|wipeattack|laserattack|strikeattack|missileattack|qa|quickattack|megaspam|secret|attackuser|multiple)'))
+async def attack_handler(event):
+    if event.sender_id not in ADMINS:
+        await event.respond("⚠️ သင်သည် ဒီ Bot ကို အသုံးပြုခွင့်ရှိသော Admin/Owner မဟုတ်ပါ။")
+        return
+
+    chat_id = event.chat_id
+    if not event.reply_to_msg_id:
+        await event.respond("❌ တိုက်ခိုက်ချင်သည့်သူ၏ မက်ဆေ့ချ်ကို Reply ပြန်ပြီး Command ခေါ်ပေးပါ။")
+        return
+
+    reply_msg = await event.get_reply_message()
+    reply_to_id = reply_msg.id
+    
+    active_attacks[chat_id] = True
+    await event.respond("🚀 **HYPERION NO MERCY ATTACK STARTED** 🚀", reply_to=reply_to_id)
+    await asyncio.sleep(0.5)
+    
+    while active_attacks.get(chat_id, False):
+        for msg in full_1000_messages:
+            if not active_attacks.get(chat_id, False):
+                break
+            await event.respond(msg, reply_to=reply_to_id)
+            await asyncio.sleep(speed_delay)
+
+# --- STOP COMMANDS ---
+@client.on(events.NewMessage(pattern=r'/(stop|stopall|ungo|stopmegaspam|unsecret|stopuser|stopmultiple)'))
+async def stop_handler(event):
+    if event.sender_id not in ADMINS:
+        return
+    chat_id = event.chat_id
+    active_attacks[chat_id] = False
+    await event.respond("🛑 Spam Attack ကို ရပ်တန့်လိုက်ပါပြီ။")
+
+# --- SPEED CONTROL COMMANDS (ALL SPEED MODES) ---
+@client.on(events.NewMessage(pattern=r'/(setspeed|mode|fastest|godspeed|ultragodspeed|newgodrebornspeed|flashspeed|lightspeed|hyperspeed|instantspeed|normal|slow|burst|hyperburst|ultraburst|normalmode|zerodelay|smartzerodelay|ultimatezerodelay|smartattack|fastspeed|ludicrous|warpspeed|sonicspeed|turbomode|overdrive|rapidfire|blitzspeed|maxspeed|plaidspeed|supersonicspeed)'))
+async def speed_handler(event):
+    if event.sender_id not in ADMINS:
+        return
+    global speed_delay
+    cmd = event.text.split()[0].lower()
+    
+    if cmd == '/setspeed':
+        try:
+            val = float(event.text.split()[1])
+            speed_delay = val
+            await event.respond(f"⚡ Speed ကို {speed_delay} စက္ကန့်သို့ ပြောင်းလိုက်ပါပြီ။")
+            return
+        except:
+            await event.respond("❌ ဥပမာ: `/setspeed 0.05` ဟု ရိုက်ပေးပါ။")
+            return
+
+    # Ultra Fast Speeds (0.001s)
+    if cmd in ['/zerodelay', '/smartzerodelay', '/ultimatezerodelay', '/ultragodspeed', '/instantspeed', '/ludicrous', '/plaidspeed', '/maxspeed']:
+        speed_delay = 0.001
+        await event.respond("⚡ Speed: Ultimate Zero Delay (0.001s)")
+    # High Speeds (0.01s)
+    elif cmd in ['/godspeed', '/flashspeed', '/lightspeed', '/hyperspeed', '/newgodrebornspeed', '/blitzspeed', '/rapidfire', '/overdrive', '/supersonicspeed']:
+        speed_delay = 0.01
+        await event.respond("⚡ Speed: God Speed (0.01s)")
+    # Fast Speeds (0.05s)
+    elif cmd in ['/fastest', '/fastspeed', '/warpspeed', '/sonicspeed', '/burst', '/hyperburst', '/ultraburst']:
+        speed_delay = 0.05
+        await event.respond("⚡ Speed: Fast Speed (0.05s)")
+    # Normal Speeds (0.1s)
+    elif cmd in ['/normal', '/normalmode', '/smartattack', '/mode']:
+        speed_delay = 0.1
+        await event.respond("⚡ Speed: Normal Speed (0.1s)")
+    # Slow Speeds (0.5s)
+    elif cmd == '/slow':
+        speed_delay = 0.5
+        await event.respond("⚡ Speed: Slow Speed (0.5s)")
+
+client.start(bot_token=bot_token)
+print("Hyperion Bot စတင် အလုပ်လုပ်နေပါပြီ...")
+client.run_until_disconnected()
